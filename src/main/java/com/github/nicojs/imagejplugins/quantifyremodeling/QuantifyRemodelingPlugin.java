@@ -25,7 +25,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Plugin(type = Command.class,
-        menuPath = "Karin Jansen>Preview Checkbox")
+        menuPath = "Plugins>Quantify remodeling")
 public class QuantifyRemodelingPlugin implements Command, Previewable {
 
     // -- Parameters --
