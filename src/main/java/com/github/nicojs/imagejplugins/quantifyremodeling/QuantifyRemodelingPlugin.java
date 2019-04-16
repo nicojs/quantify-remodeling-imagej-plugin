@@ -117,17 +117,18 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
             orderParameterResults.addValue("param_weighted", orderParameter.weighted_order_param);
         }
         orderParameterResults.show("order_param_results.csv");
-//
-//        for (int i = 0; i < orderParameters.size(); i++) {
-//            showBorderResults(orderParameters.get(i), "angle_distribution_" + i + "_borders.csv");
-//        }
+
+        for (int i = 0; i < orderParameters.size(); i++) {
+            showBorderResults(orderParameters.get(i), "angle_distribution_" + i + "_borders.csv");
+        }
     }
 
     private void showBorderResults(OrderParameter orderParameter, String windowTitle) {
         ResultsTable rt = new ResultsTable();
         for (int j = 0; j < orderParameter.coh_list.size(); j++) {
             rt.incrementCounter();
-            rt.addValue(orderParameter.or_list.get(j).toString(), orderParameter.coh_list.get(j));
+            rt.addValue("Orientation", orderParameter.or_list.get(j).toString());
+            rt.addValue("Coherence", orderParameter.coh_list.get(j));
         }
         rt.show(windowTitle);
     }
