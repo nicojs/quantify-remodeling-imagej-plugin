@@ -5,6 +5,7 @@ import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
+import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 import net.imagej.DatasetService;
 import org.scijava.ItemVisibility;
@@ -105,7 +106,30 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
             return orderParameter;
         }).collect(Collectors.toList());
 
-        // TODO: Show results
+        // https://imagej.net/Tips_for_developers#Show_a_results_table
+        ResultsTable orderParameterResults = new ResultsTable();
+        for (int i = 0; i < orderParameters.size(); i++) {
+            OrderParameter orderParameter = orderParameters.get(i);
+            orderParameterResults.incrementCounter(); // next row
+            orderParameterResults.addValue("pixel", i);
+            orderParameterResults.addValue("um", toMicrons(i));
+            orderParameterResults.addValue("param", orderParameter.order_param);
+            orderParameterResults.addValue("param_weighted", orderParameter.weighted_order_param);
+        }
+        orderParameterResults.show("order_param_results.csv");
+//
+//        for (int i = 0; i < orderParameters.size(); i++) {
+//            showBorderResults(orderParameters.get(i), "angle_distribution_" + i + "_borders.csv");
+//        }
+    }
+
+    private void showBorderResults(OrderParameter orderParameter, String windowTitle) {
+        ResultsTable rt = new ResultsTable();
+        for (int j = 0; j < orderParameter.coh_list.size(); j++) {
+            rt.incrementCounter();
+            rt.addValue(orderParameter.or_list.get(j).toString(), orderParameter.coh_list.get(j));
+        }
+        rt.show(windowTitle);
     }
 
     private OrderParameter getOrderParameter(ImagePlus orientationRegionImage, ImagePlus coherencyRegionImage, double meansIntensity) {
@@ -218,6 +242,10 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
 
     private double toPixels(double microns) {
         return 1 / originalFile.getCalibration().pixelWidth * microns;
+    }
+
+    private double toMicrons(int pixel) {
+        return originalFile.getCalibration().pixelWidth * pixel;
     }
 
 
