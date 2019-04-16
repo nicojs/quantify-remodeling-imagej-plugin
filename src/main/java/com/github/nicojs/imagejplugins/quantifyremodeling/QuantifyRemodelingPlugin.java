@@ -134,11 +134,8 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
     }
 
     private OrderParameter getOrderParameter(ImagePlus orientationRegionImage, ImagePlus coherencyRegionImage, double meansIntensity) {
-        float[] orientArray = (float[]) orientationRegionImage.getProcessor().getPixels();
-        float[] cohArray = (float[]) coherencyRegionImage.getProcessor().getPixels();
-
-        DoubleStream coherencyStream = IntStream.range(0, cohArray.length)
-                .mapToDouble(i -> cohArray[i]);
+        float[] orientationPixels = (float[]) orientationRegionImage.getProcessor().getPixels();
+        float[] coherencyPixels = (float[]) coherencyRegionImage.getProcessor().getPixels();
 
         List<Double> sin_or = new ArrayList<>();
         List<Double> cos_or = new ArrayList<>();
@@ -147,21 +144,21 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
         List<Double> coh_list = new ArrayList<>();
         List<Double> or_list = new ArrayList<>();
 
-        List<Boolean> mask = coherencyStream
-                .mapToObj(x -> x >= coherencyCutoff)
-                .collect(Collectors.toList());
-        for (int i = 0; i < mask.size(); i++) {
-            double sin_tmp = Math.sin(orientArray[i] * 2); // here I do sin(2*angle) where angle is in radian
-            double cos_tmp = Math.cos(orientArray[i] * 2);
-            double weight_sin_or_tmp = cohArray[i] * Math.sin(orientArray[i] * 2);
-            double weight_cos_or_tmp = cohArray[i] * Math.cos(orientArray[i] * 2);
+        for (int i = 0; i < coherencyPixels.length; i++) {
+            double coherencyValue = coherencyPixels[i];
+            if (coherencyValue >= coherencyCutoff) {
+                double sin_tmp = Math.sin(orientationPixels[i] * 2); // here I do sin(2*angle) where angle is in radian
+                double cos_tmp = Math.cos(orientationPixels[i] * 2);
+                double weight_sin_or_tmp = coherencyValue * Math.sin(orientationPixels[i] * 2);
+                double weight_cos_or_tmp = coherencyValue * Math.cos(orientationPixels[i] * 2);
 
-            cos_or.add(cos_tmp);
-            sin_or.add(sin_tmp);
-            weight_sin_or.add(weight_sin_or_tmp);
-            weight_cos_or.add(weight_cos_or_tmp);
-            coh_list.add((double) cohArray[i]);
-            or_list.add(orientArray[i] * 360 / (2 * Math.PI));
+                cos_or.add(cos_tmp);
+                sin_or.add(sin_tmp);
+                weight_sin_or.add(weight_sin_or_tmp);
+                weight_cos_or.add(weight_cos_or_tmp);
+                coh_list.add(coherencyValue);
+                or_list.add(orientationPixels[i] * 360 / (2 * Math.PI));
+            }
         }
 
         double avg_sin_or = sin_or.stream().collect(Collectors.averagingDouble(i -> i));
@@ -190,55 +187,7 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
             this.or_list = or_list;
             this.meansIntensity = meansIntensity;
         }
-
-        private double averageOrientation() {
-            return or_list.stream().mapToDouble(i -> i).average().getAsDouble();
-        }
-
-        private String toCvsString() {
-            NumberFormat englishNumberFormat = NumberFormat.getInstance(Locale.ENGLISH);
-            return String.format("%s,%s,%s,%s,%s", "Roi X",
-                    englishNumberFormat.format(order_param),
-                    englishNumberFormat.format(weighted_order_param),
-                    englishNumberFormat.format(meansIntensity),
-                    englishNumberFormat.format(averageOrientation()));
-        }
     }
-
-    /*
-
-	sin_or=[]
-	cos_or=[]
-	weight_sin_or=[]
-	weight_cos_or=[]
-	coh_list=[]
-	or_list=[]
-
-	for i in range(len(mask)):
-		if mask[i]==True:
-			sin_tmp= math.sin(float(orient_array[i])*2) # here I do sin(2*angle) where angle is in radian
-			cos_tmp=math.cos(float(orient_array[i]) *2)
-			weight_sin_or_tmp=float(coher_array[i])*math.sin(float(orient_array[i])*2)
-			weight_cos_or_tmp=float(coher_array[i])*math.cos(float(orient_array[i])*2)
-			cos_or.append(cos_tmp)
-			sin_or.append(sin_tmp)
-			weight_sin_or.append(weight_sin_or_tmp)
-			weight_cos_or.append(weight_cos_or_tmp)
-			coh_list.append(coher_array[i])
-			or_list.append(orient_array[i]*360/(2*math.pi))
-
-	avg_sin_or=float(sum(sin_or)) / float(len(sin_or))
-	avg_cos_or=float(sum(cos_or))/float(len(cos_or))
-	avg_weight_sin_or=float( sum(weight_sin_or))/ float(sum(coh_list))
-	avg_weight_cos_or=float( sum(weight_cos_or))/ float(sum(coh_list))
-
-	order_param=math.sqrt(avg_sin_or**2+avg_cos_or**2)
-	weighted_order_param=math.sqrt(avg_weight_sin_or**2+avg_weight_cos_or**2)
-	#print (order_param,weighted_order_param)
-
-	return(order_param,weighted_order_param,coh_list,or_list)
-
-    * */
 
 
     private double toPixels(double microns) {
