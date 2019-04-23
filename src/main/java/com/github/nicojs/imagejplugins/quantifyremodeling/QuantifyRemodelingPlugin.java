@@ -56,7 +56,8 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
     private ImagePlus coherencyFile;
 
     @Parameter(
-            label = "Border (in microns)"
+            label = "Border (in microns)",
+            validater = "validateBorder"
     )
     private double border;
 
@@ -121,7 +122,7 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
         orderParameterResults.show("Results Intensity and order parameters");
 
         for (int i = 0; i < orderParameters.size(); i++) {
-            showBorderResults(orderParameters.get(i), "angle_distribution_for_ROI_" + (i + 1));
+            showBorderResults(orderParameters.get(i), "ROI_" + (i + 1) + "_angle_distribution");
         }
     }
 
@@ -151,28 +152,34 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
             if (coherencyValue >= coherencyCutoff) {
                 double sin_tmp = Math.sin(orientationPixels[i] * 2); // here I do sin(2*angle) where angle is in radian
                 double cos_tmp = Math.cos(orientationPixels[i] * 2);
-                double weight_sin_or_tmp = coherencyValue * Math.sin(orientationPixels[i] * 2);
-                double weight_cos_or_tmp = coherencyValue * Math.cos(orientationPixels[i] * 2);
+                double weight_sin_or_tmp = coherencyValue * sin_tmp;
+                double weight_cos_or_tmp = coherencyValue * cos_tmp;
 
                 cos_or.add(cos_tmp);
                 sin_or.add(sin_tmp);
                 weight_sin_or.add(weight_sin_or_tmp);
                 weight_cos_or.add(weight_cos_or_tmp);
                 coh_list.add(coherencyValue);
-                or_list.add(orientationPixels[i] * 360 / (2 * Math.PI));
+                or_list.add(toDegree(orientationPixels[i]));
             }
         }
 
         double avg_sin_or = sin_or.stream().collect(Collectors.averagingDouble(i -> i));
         double avg_cos_or = cos_or.stream().collect(Collectors.averagingDouble(i -> i));
 
-        double avg_weight_sin_or = weight_sin_or.stream().mapToDouble(i -> i).sum() / coh_list.stream().mapToDouble(i -> i).sum();
-        double avg_weight_cos_or = weight_cos_or.stream().mapToDouble(i -> i).sum() / coh_list.stream().mapToDouble(i -> i).sum();
+        final double totalCoherency = coh_list.stream().mapToDouble(i -> i).sum();
+        // Take the weighted average of sin and cos
+        double avg_weight_sin_or = weight_sin_or.stream().mapToDouble(i -> i).sum() / totalCoherency;
+        double avg_weight_cos_or = weight_cos_or.stream().mapToDouble(i -> i).sum() / totalCoherency;
 
         double order_param = Math.sqrt(Math.pow(avg_sin_or, 2) + Math.pow(avg_cos_or, 2));
         double weighted_order_param = Math.sqrt(Math.pow(avg_weight_sin_or, 2) + Math.pow(avg_weight_cos_or, 2));
         double average_orientation = or_list.stream().collect(Collectors.averagingDouble(i -> i));
         return new OrderParameter(order_param, weighted_order_param, coh_list, or_list, meansIntensity, average_orientation);
+    }
+
+    private double toDegree(double orientationPixel) {
+         return orientationPixel * 360 / (2 * Math.PI);
     }
 
     private static class OrderParameter {
@@ -195,8 +202,8 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
     }
 
 
-    private double toPixels(double microns) {
-        return 1 / originalFile.getCalibration().pixelWidth * microns;
+    private int toPixels(double microns) {
+        return (int) Math.round(1 / originalFile.getCalibration().pixelWidth * microns);
     }
 
     private double toMicrons(int pixel) {
@@ -218,11 +225,13 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
     }
 
     // -- Initializer methods --
-    public boolean validateBorder(int value) {
-        double maxWidth = orientationFile.getCalibration().pixelWidth * originalFile.getWidth();
-        if (value < 0) {
-            return false;
-        } else return !(value > maxWidth);
+    public boolean validateBorder() {
+//        double maxWidth = orientationFile.getCalibration().pixelWidth * originalFile.getWidth();
+//        if (value < 0) {
+//            return false;
+//        } else return !(value > maxWidth);
+        System.out.println("test");
+        return true;
     }
 
 }
