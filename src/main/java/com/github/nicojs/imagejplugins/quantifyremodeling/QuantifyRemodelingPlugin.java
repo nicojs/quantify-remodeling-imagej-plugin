@@ -111,16 +111,17 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
         for (int i = 0; i < orderParameters.size(); i++) {
             OrderParameter orderParameter = orderParameters.get(i);
             orderParameterResults.incrementCounter(); // next row
-            orderParameterResults.addValue("Window nr.", i+1);
+            orderParameterResults.addValue("Window nr.", i + 1);
             orderParameterResults.addValue("Window size (um)", border);
             orderParameterResults.addValue("param", orderParameter.order_param);
             orderParameterResults.addValue("param_weighted", orderParameter.weighted_order_param);
             orderParameterResults.addValue("fluorescent_Intensity (a.u.)", orderParameter.meansIntensity);
+            orderParameterResults.addValue("average_orientation", orderParameter.average_orientation);
         }
         orderParameterResults.show("Results Intensity and order parameters");
 
         for (int i = 0; i < orderParameters.size(); i++) {
-            showBorderResults(orderParameters.get(i), "angle_distribution_for_ROI_" + (i+1) );
+            showBorderResults(orderParameters.get(i), "angle_distribution_for_ROI_" + (i + 1));
         }
     }
 
@@ -170,24 +171,26 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
 
         double order_param = Math.sqrt(Math.pow(avg_sin_or, 2) + Math.pow(avg_cos_or, 2));
         double weighted_order_param = Math.sqrt(Math.pow(avg_weight_sin_or, 2) + Math.pow(avg_weight_cos_or, 2));
-        double average_orientation=or_list.sum()/or_list.size() //need to check this part of the code
-        return new OrderParameter(order_param, weighted_order_param, coh_list, or_list, meansIntensity,average_orientation);
+        double average_orientation = or_list.stream().collect(Collectors.averagingDouble(i -> i));
+        return new OrderParameter(order_param, weighted_order_param, coh_list, or_list, meansIntensity, average_orientation);
     }
 
     private static class OrderParameter {
-    //need to add average_orientation in here as well
+        //need to add average_orientation in here as well
         private final double meansIntensity;
         private final double order_param;
         private final double weighted_order_param;
         private final List<Double> coh_list;
         private final List<Double> or_list;
         private final double average_orientation;
-        private OrderParameter(double order_param, double weighted_order_param, List<Double> coh_list, List<Double> or_list, double meansIntensity) {
+
+        private OrderParameter(double order_param, double weighted_order_param, List<Double> coh_list, List<Double> or_list, double meansIntensity, double average_orientation) {
             this.order_param = order_param;
             this.weighted_order_param = weighted_order_param;
             this.coh_list = coh_list;
             this.or_list = or_list;
             this.meansIntensity = meansIntensity;
+            this.average_orientation = average_orientation;
         }
     }
 
@@ -221,6 +224,5 @@ public class QuantifyRemodelingPlugin implements Command, Previewable {
             return false;
         } else return !(value > maxWidth);
     }
-
 
 }
